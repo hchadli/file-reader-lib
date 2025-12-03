@@ -157,6 +157,68 @@ namespace FileReader.Tests
             File.Delete(xmlPath);
         }
 
+        [Fact]
+        public void ReadEncryptedText_ReturnsPlainText_WithReverseDecryptor()
+        {
+            var plain = "Secret";
+            var cipher = new string(plain.Reverse().ToArray());
+            File.WriteAllText(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var result = reader.ReadEncryptedText(_tempFilePath, decryptor);
+
+            Assert.Equal(plain, result);
+        }
+
+        [Fact]
+        public async Task ReadEncryptedTextAsync_ReturnsPlainText_WithReverseDecryptor()
+        {
+            var plain = "AsyncSecret";
+            var cipher = new string(plain.Reverse().ToArray());
+            await File.WriteAllTextAsync(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var result = await reader.ReadEncryptedTextAsync(_tempFilePath, decryptor);
+
+            Assert.Equal(plain, result);
+        }
+
+        [Fact]
+        public void ReadEncryptedText_ThrowsArgumentNullException_OnNullDecryptor()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            File.WriteAllText(_tempFilePath, "abc");
+            Assert.Throws<ArgumentNullException>(() => reader.ReadEncryptedText(_tempFilePath, null!));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedTextAsync_ThrowsArgumentNullException_OnNullDecryptor()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            await File.WriteAllTextAsync(_tempFilePath, "abc");
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await reader.ReadEncryptedTextAsync(_tempFilePath, null!));
+        }
+
+        [Fact]
+        public void ReadEncryptedText_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Assert.Throws<FileNotFoundException>(() => reader.ReadEncryptedText(missing, decryptor));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedTextAsync_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedTextAsync(missing, decryptor));
+        }
+
         public void Dispose()
         {
             try

@@ -74,5 +74,25 @@ namespace FileReaderLibrary
             await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
             return await Task.Run(() => XDocument.Load(fs)).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Reads an encrypted text file then decrypts using the provided decryptor.
+        /// </summary>
+        public string ReadEncryptedText(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = ReadAllText(path);
+            return decryptor.Decrypt(cipher);
+        }
+
+        /// <summary>
+        /// Asynchronously reads an encrypted text file then decrypts using the provided decryptor.
+        /// </summary>
+        public async Task<string> ReadEncryptedTextAsync(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = await ReadAllTextAsync(path).ConfigureAwait(false);
+            return await decryptor.DecryptAsync(cipher).ConfigureAwait(false);
+        }
     }
 }
