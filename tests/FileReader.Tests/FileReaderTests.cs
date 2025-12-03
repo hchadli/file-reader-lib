@@ -285,7 +285,7 @@ namespace FileReader.Tests
         public void ReadXmlAuthorized_ThrowsArgumentNullException_OnNullAuthorizer()
         {
             var reader = new FileReaderLibrary.FileReader();
-            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullauth_{Guid.NewGuid()}.xml");
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullauth_[Guid.NewGuid()].xml");
             File.WriteAllText(xmlPath, "<root/>");
             Assert.Throws<ArgumentNullException>(() => reader.ReadXmlAuthorized(xmlPath, "user", null!));
             File.Delete(xmlPath);
@@ -295,11 +295,81 @@ namespace FileReader.Tests
         public void ReadXmlAuthorized_ThrowsArgumentNullException_OnNullRole()
         {
             var reader = new FileReaderLibrary.FileReader();
-            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullrole_{Guid.NewGuid()}.xml");
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullrole_[Guid.NewGuid()].xml");
             File.WriteAllText(xmlPath, "<root/>");
             var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer(new[] { xmlPath });
             Assert.Throws<ArgumentNullException>(() => reader.ReadXmlAuthorized(xmlPath, null!, authorizer));
             File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public void ReadEncryptedXml_ReturnsXDocument_WithReverseDecryptor()
+        {
+            var plainXml = "<root><message>EncXml</message></root>";
+            var cipher = new string(plainXml.Reverse().ToArray());
+            File.WriteAllText(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var doc = reader.ReadEncryptedXml(_tempFilePath, decryptor);
+
+            Assert.Equal("EncXml", doc.Root!.Element("message")!.Value);
+        }
+
+        [Fact]
+        public async Task ReadEncryptedXmlAsync_ReturnsXDocument_WithReverseDecryptor()
+        {
+            var plainXml = "<root><message>EncXmlAsync</message></root>";
+            var cipher = new string(plainXml.Reverse().ToArray());
+            await File.WriteAllTextAsync(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var doc = await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor);
+
+            Assert.Equal("EncXmlAsync", doc.Root!.Element("message")!.Value);
+        }
+
+        [Fact]
+        public void ReadEncryptedXml_Throws_OnInvalidDecryptedXml()
+        {
+            var invalidPlain = "<root><oops>";
+            var cipher = new string(invalidPlain.Reverse().ToArray());
+            File.WriteAllText(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            Assert.ThrowsAny<Exception>(() => reader.ReadEncryptedXml(_tempFilePath, decryptor));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedXmlAsync_Throws_OnInvalidDecryptedXml()
+        {
+            var invalidPlain = "<root><oops>";
+            var cipher = new string(invalidPlain.Reverse().ToArray());
+            await File.WriteAllTextAsync(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            await Assert.ThrowsAsync<System.Xml.XmlException>(async () => await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor));
+        }
+
+        [Fact]
+        public void ReadEncryptedXml_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Assert.Throws<FileNotFoundException>(() => reader.ReadEncryptedXml(missing, decryptor));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedXmlAsync_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedXmlAsync(missing, decryptor));
         }
 
         public void Dispose()

@@ -120,5 +120,27 @@ namespace FileReaderLibrary
 
             return await ReadXmlAsync(path).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Reads an encrypted XML file and parses it using the provided decryptor.
+        /// </summary>
+        public XDocument ReadEncryptedXml(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = ReadAllText(path);
+            var plain = decryptor.Decrypt(cipher);
+            return XDocument.Parse(plain);
+        }
+
+        /// <summary>
+        /// Asynchronously reads an encrypted XML file and parses it using the provided decryptor.
+        /// </summary>
+        public async Task<XDocument> ReadEncryptedXmlAsync(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = await ReadAllTextAsync(path).ConfigureAwait(false);
+            var plain = await decryptor.DecryptAsync(cipher).ConfigureAwait(false);
+            return XDocument.Parse(plain);
+        }
     }
 }
