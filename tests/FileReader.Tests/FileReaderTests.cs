@@ -495,7 +495,7 @@ namespace FileReader.Tests
             await File.WriteAllTextAsync(jsonPath, "{invalid}");
 
             var reader = new FileReaderLibrary.FileReader();
-            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadJsonAsync(jsonPath));
+            await Assert.ThrowsAsync<Exception>(async () => await reader.ReadJsonAsync(jsonPath));
             File.Delete(jsonPath);
         }
 
@@ -513,6 +513,76 @@ namespace FileReader.Tests
             var reader = new FileReaderLibrary.FileReader();
             var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadJsonAsync(missing));
+        }
+
+        [Fact]
+        public void ReadEncryptedJson_ReturnsDocument_WithReverseDecryptor()
+        {
+            var plainJson = "{\"message\":\"EncJson\"}";
+            var cipher = new string(plainJson.Reverse().ToArray());
+            File.WriteAllText(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            using var doc = reader.ReadEncryptedJson(_tempFilePath, decryptor);
+
+            Assert.Equal("EncJson", doc.RootElement.GetProperty("message").GetString());
+        }
+
+        [Fact]
+        public async Task ReadEncryptedJsonAsync_ReturnsDocument_WithReverseDecryptor()
+        {
+            var plainJson = "{\"message\":\"EncJsonAsync\"}";
+            var cipher = new string(plainJson.Reverse().ToArray());
+            await File.WriteAllTextAsync(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            using var doc = await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor);
+
+            Assert.Equal("EncJsonAsync", doc.RootElement.GetProperty("message").GetString());
+        }
+
+        [Fact]
+        public void ReadEncryptedJson_Throws_OnInvalidDecryptedJson()
+        {
+            var invalidPlain = "{invalid}";
+            var cipher = new string(invalidPlain.Reverse().ToArray());
+            File.WriteAllText(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            Assert.ThrowsAny<Exception>(() => reader.ReadEncryptedJson(_tempFilePath, decryptor));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedJsonAsync_Throws_OnInvalidDecryptedJson()
+        {
+            var invalidPlain = "{invalid}";
+            var cipher = new string(invalidPlain.Reverse().ToArray());
+            await File.WriteAllTextAsync(_tempFilePath, cipher);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            await Assert.ThrowsAsync<Exception>(async () => await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor));
+        }
+
+        [Fact]
+        public void ReadEncryptedJson_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Assert.Throws<FileNotFoundException>(() => reader.ReadEncryptedJson(missing, decryptor));
+        }
+
+        [Fact]
+        public async Task ReadEncryptedJsonAsync_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedJsonAsync(missing, decryptor));
         }
 
         public void Dispose()

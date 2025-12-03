@@ -187,5 +187,27 @@ namespace FileReaderLibrary
             var text = await ReadAllTextAsync(path).ConfigureAwait(false);
             return JsonDocument.Parse(text);
         }
+
+        /// <summary>
+        /// Reads an encrypted JSON file and parses it using the provided decryptor.
+        /// </summary>
+        public JsonDocument ReadEncryptedJson(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = ReadAllText(path);
+            var plain = decryptor.Decrypt(cipher);
+            return JsonDocument.Parse(plain);
+        }
+
+        /// <summary>
+        /// Asynchronously reads an encrypted JSON file and parses it using the provided decryptor.
+        /// </summary>
+        public async Task<JsonDocument> ReadEncryptedJsonAsync(string path, ITextDecryptor decryptor)
+        {
+            if (decryptor == null) throw new ArgumentNullException(nameof(decryptor));
+            var cipher = await ReadAllTextAsync(path).ConfigureAwait(false);
+            var plain = await decryptor.DecryptAsync(cipher).ConfigureAwait(false);
+            return JsonDocument.Parse(plain);
+        }
     }
 }

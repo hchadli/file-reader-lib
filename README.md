@@ -1,6 +1,6 @@
 # FileReader Library
 
-Simple library that provides basic file, encrypted text, XML, and JSON reading functionality, including encrypted XML and role-based authorization for XML and text.
+Simple library that provides basic file, encrypted text, XML, and JSON reading functionality, including encrypted XML/JSON and role-based authorization for XML and text.
 
 ## Usage
 
@@ -14,10 +14,10 @@ Simple library that provides basic file, encrypted text, XML, and JSON reading f
 - `FileReader.ReadEncryptedTextAsync(string path, ITextDecryptor decryptor)` - asynchronously reads and decrypts an encrypted text file using the provided decryptor.
 - `FileReader.ReadEncryptedXml(string path, ITextDecryptor decryptor)` - reads, decrypts, and parses an encrypted XML file.
 - `FileReader.ReadEncryptedXmlAsync(string path, ITextDecryptor decryptor)` - asynchronously reads, decrypts, and parses an encrypted XML file.
-- `FileReader.ReadXmlAuthorized(string path, string role, IXmlAccessAuthorizer authorizer)` - reads XML if authorized for the given role.
-- `FileReader.ReadXmlAuthorizedAsync(string path, string role, IXmlAccessAuthorizer authorizer)` - asynchronously reads XML if authorized.
 - `FileReader.ReadJson(string path)` - reads and parses a JSON file into `JsonDocument`.
 - `FileReader.ReadJsonAsync(string path)` - asynchronously reads and parses a JSON file into `JsonDocument`.
+- `FileReader.ReadEncryptedJson(string path, ITextDecryptor decryptor)` - reads, decrypts, and parses an encrypted JSON file.
+- `FileReader.ReadEncryptedJsonAsync(string path, ITextDecryptor decryptor)` - asynchronously reads, decrypts, and parses an encrypted JSON file.
 
 ## Pluggable decryption
 
@@ -45,3 +45,4 @@ dotnet test
 - v5.0.0: Adds encrypted XML reading (sync/async) with pluggable decryptor and tests.
 - v6.0.0: Adds role-based authorization for text reading with pluggable authorizer and tests.
 - v7.0.0: Adds JSON reading (sync/async) with tests.
+- v8.0.0: Adds encrypted JSON reading (sync/async) with pluggable decryptor and tests.
