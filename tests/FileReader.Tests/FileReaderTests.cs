@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
@@ -446,6 +447,72 @@ namespace FileReader.Tests
             var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer(new[] { textPath });
             Assert.Throws<ArgumentNullException>(() => reader.ReadAllTextAuthorized(textPath, null!, authorizer));
             File.Delete(textPath);
+        }
+
+        [Fact]
+        public void ReadJson_ReturnsDocument_WhenValidJson()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_{Guid.NewGuid()}.json");
+            var json = "{\"message\":\"Hello\"}";
+            File.WriteAllText(jsonPath, json);
+
+            var reader = new FileReaderLibrary.FileReader();
+            using var doc = reader.ReadJson(jsonPath);
+
+            Assert.Equal("Hello", doc.RootElement.GetProperty("message").GetString());
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public async Task ReadJsonAsync_ReturnsDocument_WhenValidJson()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_{Guid.NewGuid()}.json");
+            var json = "{\"message\":\"Async\"}";
+            await File.WriteAllTextAsync(jsonPath, json);
+
+            var reader = new FileReaderLibrary.FileReader();
+            using var doc = await reader.ReadJsonAsync(jsonPath);
+
+            Assert.Equal("Async", doc.RootElement.GetProperty("message").GetString());
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public void ReadJson_Throws_OnInvalidJson()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_invalid_{Guid.NewGuid()}.json");
+            File.WriteAllText(jsonPath, "{invalid}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            Assert.ThrowsAny<Exception>(() => reader.ReadJson(jsonPath));
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public async Task ReadJsonAsync_Throws_OnInvalidJson()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_invalid_{Guid.NewGuid()}.json");
+            await File.WriteAllTextAsync(jsonPath, "{invalid}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadJsonAsync(jsonPath));
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public void ReadJson_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Assert.Throws<FileNotFoundException>(() => reader.ReadJson(missing));
+        }
+
+        [Fact]
+        public async Task ReadJsonAsync_ThrowsFileNotFound_WhenMissing()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadJsonAsync(missing));
         }
 
         public void Dispose()

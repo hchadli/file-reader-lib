@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -167,6 +168,24 @@ namespace FileReaderLibrary
                 throw new UnauthorizedAccessException($"Role '{role}' is not authorized to read '{path}'.");
 
             return await ReadAllTextAsync(path).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Reads and parses a JSON file into a JsonDocument.
+        /// </summary>
+        public JsonDocument ReadJson(string path)
+        {
+            var text = ReadAllText(path);
+            return JsonDocument.Parse(text);
+        }
+
+        /// <summary>
+        /// Asynchronously reads and parses a JSON file into a JsonDocument.
+        /// </summary>
+        public async Task<JsonDocument> ReadJsonAsync(string path)
+        {
+            var text = await ReadAllTextAsync(path).ConfigureAwait(false);
+            return JsonDocument.Parse(text);
         }
     }
 }
