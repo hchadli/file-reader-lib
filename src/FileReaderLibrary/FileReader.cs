@@ -142,5 +142,31 @@ namespace FileReaderLibrary
             var plain = await decryptor.DecryptAsync(cipher).ConfigureAwait(false);
             return XDocument.Parse(plain);
         }
+
+        /// <summary>
+        /// Reads a text file if authorized by the provided authorizer.
+        /// </summary>
+        public string ReadAllTextAuthorized(string path, string role, ITextAccessAuthorizer authorizer)
+        {
+            if (authorizer == null) throw new ArgumentNullException(nameof(authorizer));
+            if (string.IsNullOrWhiteSpace(role)) throw new ArgumentNullException(nameof(role));
+            if (!authorizer.CanRead(path, role))
+                throw new UnauthorizedAccessException($"Role '{role}' is not authorized to read '{path}'.");
+
+            return ReadAllText(path);
+        }
+
+        /// <summary>
+        /// Asynchronously reads a text file if authorized by the provided authorizer.
+        /// </summary>
+        public async Task<string> ReadAllTextAuthorizedAsync(string path, string role, ITextAccessAuthorizer authorizer)
+        {
+            if (authorizer == null) throw new ArgumentNullException(nameof(authorizer));
+            if (string.IsNullOrWhiteSpace(role)) throw new ArgumentNullException(nameof(role));
+            if (!authorizer.CanRead(path, role))
+                throw new UnauthorizedAccessException($"Role '{role}' is not authorized to read '{path}'.");
+
+            return await ReadAllTextAsync(path).ConfigureAwait(false);
+        }
     }
 }

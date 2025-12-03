@@ -372,6 +372,82 @@ namespace FileReader.Tests
             await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedXmlAsync(missing, decryptor));
         }
 
+        [Fact]
+        public void ReadAllTextAuthorized_AllowsAdmin_ForAnyPath()
+        {
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_admin_{Guid.NewGuid()}.txt");
+            File.WriteAllText(textPath, "admin-ok");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer();
+
+            var content = reader.ReadAllTextAuthorized(textPath, "admin", authorizer);
+            Assert.Equal("admin-ok", content);
+            File.Delete(textPath);
+        }
+
+        [Fact]
+        public async Task ReadAllTextAuthorizedAsync_AllowsAdmin_ForAnyPath()
+        {
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_admin_async_{Guid.NewGuid()}.txt");
+            await File.WriteAllTextAsync(textPath, "admin-async-ok");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer();
+
+            var content = await reader.ReadAllTextAuthorizedAsync(textPath, "admin", authorizer);
+            Assert.Equal("admin-async-ok", content);
+            File.Delete(textPath);
+        }
+
+        [Fact]
+        public void ReadAllTextAuthorized_AllowsUser_ForAllowedPath()
+        {
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_user_{Guid.NewGuid()}.txt");
+            File.WriteAllText(textPath, "user-ok");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer(new[] { textPath });
+
+            var content = reader.ReadAllTextAuthorized(textPath, "user", authorizer);
+            Assert.Equal("user-ok", content);
+            File.Delete(textPath);
+        }
+
+        [Fact]
+        public async Task ReadAllTextAuthorizedAsync_DeniesUser_ForNotAllowedPath()
+        {
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_userdeny_{Guid.NewGuid()}.txt");
+            await File.WriteAllTextAsync(textPath, "deny");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer(new[] { "some-other-path.txt" });
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await reader.ReadAllTextAuthorizedAsync(textPath, "user", authorizer));
+            File.Delete(textPath);
+        }
+
+        [Fact]
+        public void ReadAllTextAuthorized_ThrowsArgumentNullException_OnNullAuthorizer()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_nullauth_{Guid.NewGuid()}.txt");
+            File.WriteAllText(textPath, "data");
+            Assert.Throws<ArgumentNullException>(() => reader.ReadAllTextAuthorized(textPath, "user", null!));
+            File.Delete(textPath);
+        }
+
+        [Fact]
+        public void ReadAllTextAuthorized_ThrowsArgumentNullException_OnNullRole()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var textPath = Path.Combine(Path.GetTempPath(), $"filereader_text_nullrole_{Guid.NewGuid()}.txt");
+            File.WriteAllText(textPath, "data");
+            var authorizer = new FileReaderLibrary.SimpleRoleTextAccessAuthorizer(new[] { textPath });
+            Assert.Throws<ArgumentNullException>(() => reader.ReadAllTextAuthorized(textPath, null!, authorizer));
+            File.Delete(textPath);
+        }
+
         public void Dispose()
         {
             try

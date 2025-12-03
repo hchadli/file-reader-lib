@@ -1,11 +1,13 @@
 # FileReader Library
 
-Simple library that provides basic file, encrypted text, and XML reading functionality, including encrypted XML and role-based authorization for XML.
+Simple library that provides basic file, encrypted text, and XML reading functionality, including encrypted XML and role-based authorization for XML and text.
 
 ## Usage
 
 - `FileReader.ReadAllText(string path)` - reads file contents synchronously.
 - `FileReader.ReadAllTextAsync(string path)` - reads file contents asynchronously.
+- `FileReader.ReadAllTextAuthorized(string path, string role, ITextAccessAuthorizer authorizer)` - reads text if authorized for the given role.
+- `FileReader.ReadAllTextAuthorizedAsync(string path, string role, ITextAccessAuthorizer authorizer)` - asynchronously reads text if authorized.
 - `FileReader.ReadXml(string path)` - reads and parses an XML file into `XDocument`.
 - `FileReader.ReadXmlAsync(string path)` - asynchronously reads and parses an XML file into `XDocument`.
 - `FileReader.ReadEncryptedText(string path, ITextDecryptor decryptor)` - reads and decrypts an encrypted text file using the provided decryptor.
@@ -19,9 +21,10 @@ Simple library that provides basic file, encrypted text, and XML reading functio
 
 Provide any implementation of `ITextDecryptor`. A sample `ReverseTextDecryptor` is included which simply reverses the text.
 
-## Role-based XML authorization
+## Role-based authorization
 
-Provide any implementation of `IXmlAccessAuthorizer`. A sample `SimpleRoleXmlAccessAuthorizer` is included where `admin` can read any path and other roles must be explicitly allowed.
+- XML: provide any implementation of `IXmlAccessAuthorizer`. A sample `SimpleRoleXmlAccessAuthorizer` is included where `admin` can read any path and other roles must be explicitly allowed.
+- Text: provide any implementation of `ITextAccessAuthorizer`. A sample `SimpleRoleTextAccessAuthorizer` is included with the same behavior.
 
 ## Run tests
 
@@ -38,3 +41,4 @@ dotnet test
 - v3.0.0: Adds encrypted text reading with pluggable decryptor and tests.
 - v4.0.0: Adds role-based authorization for XML reading with pluggable authorizer and tests.
 - v5.0.0: Adds encrypted XML reading (sync/async) with pluggable decryptor and tests.
+- v6.0.0: Adds role-based authorization for text reading with pluggable authorizer and tests.
