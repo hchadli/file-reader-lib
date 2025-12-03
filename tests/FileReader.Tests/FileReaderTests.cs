@@ -1,11 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Xunit;
-
-namespace FileReader.Tests
+﻿namespace FileReader.Tests
 {
     public class FileReaderTests : IDisposable
     {
@@ -153,7 +146,7 @@ namespace FileReader.Tests
             await File.WriteAllTextAsync(xmlPath, invalid);
 
             var reader = new FileReaderLibrary.FileReader();
-            await Assert.ThrowsAsync<System.Exception>(() => reader.ReadXmlAsync(xmlPath));
+            await Assert.ThrowsAsync<System.Xml.XmlException>(() => reader.ReadXmlAsync(xmlPath));
 
             File.Delete(xmlPath);
         }
@@ -352,7 +345,7 @@ namespace FileReader.Tests
 
             var reader = new FileReaderLibrary.FileReader();
             var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
-            await Assert.ThrowsAsync<System.Exception>(async () => await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor));
+            await Assert.ThrowsAnyAsync<System.Exception>(async () => await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor));
         }
 
         [Fact]
@@ -495,7 +488,7 @@ namespace FileReader.Tests
             await File.WriteAllTextAsync(jsonPath, "{invalid}");
 
             var reader = new FileReaderLibrary.FileReader();
-            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadJsonAsync(jsonPath));
+            await Assert.ThrowsAnyAsync<System.Text.Json.JsonException>(async () => await reader.ReadJsonAsync(jsonPath));
             File.Delete(jsonPath);
         }
 
@@ -564,7 +557,7 @@ namespace FileReader.Tests
 
             var reader = new FileReaderLibrary.FileReader();
             var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
-            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor));
+            await Assert.ThrowsAnyAsync<System.Text.Json.JsonException>(async () => await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor));
         }
 
         [Fact]
