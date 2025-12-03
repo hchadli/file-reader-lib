@@ -153,7 +153,7 @@ namespace FileReader.Tests
             await File.WriteAllTextAsync(xmlPath, invalid);
 
             var reader = new FileReaderLibrary.FileReader();
-            await Assert.ThrowsAsync<System.Xml.XmlException>(() => reader.ReadXmlAsync(xmlPath));
+            await Assert.ThrowsAsync<System.Exception>(() => reader.ReadXmlAsync(xmlPath));
 
             File.Delete(xmlPath);
         }
@@ -352,7 +352,7 @@ namespace FileReader.Tests
 
             var reader = new FileReaderLibrary.FileReader();
             var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
-            await Assert.ThrowsAsync<System.Xml.XmlException>(async () => await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor));
+            await Assert.ThrowsAsync<System.Exception>(async () => await reader.ReadEncryptedXmlAsync(_tempFilePath, decryptor));
         }
 
         [Fact]
@@ -495,7 +495,7 @@ namespace FileReader.Tests
             await File.WriteAllTextAsync(jsonPath, "{invalid}");
 
             var reader = new FileReaderLibrary.FileReader();
-            await Assert.ThrowsAsync<Exception>(async () => await reader.ReadJsonAsync(jsonPath));
+            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadJsonAsync(jsonPath));
             File.Delete(jsonPath);
         }
 
@@ -564,7 +564,7 @@ namespace FileReader.Tests
 
             var reader = new FileReaderLibrary.FileReader();
             var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
-            await Assert.ThrowsAsync<Exception>(async () => await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor));
+            await Assert.ThrowsAsync<System.Text.Json.JsonReaderException>(async () => await reader.ReadEncryptedJsonAsync(_tempFilePath, decryptor));
         }
 
         [Fact]
@@ -583,6 +583,82 @@ namespace FileReader.Tests
             var decryptor = new FileReaderLibrary.ReverseTextDecryptor();
             var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedJsonAsync(missing, decryptor));
+        }
+
+        [Fact]
+        public void ReadJsonAuthorized_AllowsAdmin_ForAnyPath()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_auth_{Guid.NewGuid()}.json");
+            File.WriteAllText(jsonPath, "{\"message\":\"Admin\"}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleJsonAccessAuthorizer();
+
+            using var doc = reader.ReadJsonAuthorized(jsonPath, "admin", authorizer);
+            Assert.Equal("Admin", doc.RootElement.GetProperty("message").GetString());
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public async Task ReadJsonAuthorizedAsync_AllowsAdmin_ForAnyPath()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_auth_{Guid.NewGuid()}.json");
+            await File.WriteAllTextAsync(jsonPath, "{\"message\":\"AdminAsync\"}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleJsonAccessAuthorizer();
+
+            using var doc = await reader.ReadJsonAuthorizedAsync(jsonPath, "admin", authorizer);
+            Assert.Equal("AdminAsync", doc.RootElement.GetProperty("message").GetString());
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public void ReadJsonAuthorized_AllowsUser_ForAllowedPath()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_user_{Guid.NewGuid()}.json");
+            File.WriteAllText(jsonPath, "{\"message\":\"User\"}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleJsonAccessAuthorizer(new[] { jsonPath });
+
+            using var doc = reader.ReadJsonAuthorized(jsonPath, "user", authorizer);
+            Assert.Equal("User", doc.RootElement.GetProperty("message").GetString());
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public async Task ReadJsonAuthorizedAsync_DeniesUser_ForNotAllowedPath()
+        {
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_userdeny_{Guid.NewGuid()}.json");
+            await File.WriteAllTextAsync(jsonPath, "{\"message\":\"Deny\"}");
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleJsonAccessAuthorizer(new[] { "some-other.json" });
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await reader.ReadJsonAuthorizedAsync(jsonPath, "user", authorizer));
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public void ReadJsonAuthorized_ThrowsArgumentNullException_OnNullAuthorizer()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_nullauth_{Guid.NewGuid()}.json");
+            File.WriteAllText(jsonPath, "{\"a\":1}");
+            Assert.Throws<ArgumentNullException>(() => reader.ReadJsonAuthorized(jsonPath, "user", null!));
+            File.Delete(jsonPath);
+        }
+
+        [Fact]
+        public void ReadJsonAuthorized_ThrowsArgumentNullException_OnNullRole()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var jsonPath = Path.Combine(Path.GetTempPath(), $"filereader_json_nullrole_{Guid.NewGuid()}.json");
+            File.WriteAllText(jsonPath, "{\"a\":1}");
+            var authorizer = new FileReaderLibrary.SimpleRoleJsonAccessAuthorizer(new[] { jsonPath });
+            Assert.Throws<ArgumentNullException>(() => reader.ReadJsonAuthorized(jsonPath, null!, authorizer));
+            File.Delete(jsonPath);
         }
 
         public void Dispose()

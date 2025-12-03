@@ -209,5 +209,31 @@ namespace FileReaderLibrary
             var plain = await decryptor.DecryptAsync(cipher).ConfigureAwait(false);
             return JsonDocument.Parse(plain);
         }
+
+        /// <summary>
+        /// Reads a JSON file if authorized by the provided authorizer.
+        /// </summary>
+        public JsonDocument ReadJsonAuthorized(string path, string role, IJsonAccessAuthorizer authorizer)
+        {
+            if (authorizer == null) throw new ArgumentNullException(nameof(authorizer));
+            if (string.IsNullOrWhiteSpace(role)) throw new ArgumentNullException(nameof(role));
+            if (!authorizer.CanRead(path, role))
+                throw new UnauthorizedAccessException($"Role '{role}' is not authorized to read '{path}'.");
+
+            return ReadJson(path);
+        }
+
+        /// <summary>
+        /// Asynchronously reads a JSON file if authorized by the provided authorizer.
+        /// </summary>
+        public async Task<JsonDocument> ReadJsonAuthorizedAsync(string path, string role, IJsonAccessAuthorizer authorizer)
+        {
+            if (authorizer == null) throw new ArgumentNullException(nameof(authorizer));
+            if (string.IsNullOrWhiteSpace(role)) throw new ArgumentNullException(nameof(role));
+            if (!authorizer.CanRead(path, role))
+                throw new UnauthorizedAccessException($"Role '{role}' is not authorized to read '{path}'.");
+
+            return await ReadJsonAsync(path).ConfigureAwait(false);
+        }
     }
 }

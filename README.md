@@ -1,6 +1,6 @@
 # FileReader Library
 
-Simple library that provides basic file, encrypted text, XML, and JSON reading functionality, including encrypted XML/JSON and role-based authorization for XML and text.
+Simple library that provides basic file, encrypted text, XML, and JSON reading functionality, including encrypted XML/JSON and role-based authorization for XML, text, and JSON.
 
 ## Usage
 
@@ -18,6 +18,8 @@ Simple library that provides basic file, encrypted text, XML, and JSON reading f
 - `FileReader.ReadJsonAsync(string path)` - asynchronously reads and parses a JSON file into `JsonDocument`.
 - `FileReader.ReadEncryptedJson(string path, ITextDecryptor decryptor)` - reads, decrypts, and parses an encrypted JSON file.
 - `FileReader.ReadEncryptedJsonAsync(string path, ITextDecryptor decryptor)` - asynchronously reads, decrypts, and parses an encrypted JSON file.
+- `FileReader.ReadJsonAuthorized(string path, string role, IJsonAccessAuthorizer authorizer)` - reads JSON if authorized for the given role.
+- `FileReader.ReadJsonAuthorizedAsync(string path, string role, IJsonAccessAuthorizer authorizer)` - asynchronously reads JSON if authorized.
 
 ## Pluggable decryption
 
@@ -27,6 +29,7 @@ Provide any implementation of `ITextDecryptor`. A sample `ReverseTextDecryptor` 
 
 - XML: provide any implementation of `IXmlAccessAuthorizer`. A sample `SimpleRoleXmlAccessAuthorizer` is included where `admin` can read any path and other roles must be explicitly allowed.
 - Text: provide any implementation of `ITextAccessAuthorizer`. A sample `SimpleRoleTextAccessAuthorizer` is included with the same behavior.
+- JSON: provide any implementation of `IJsonAccessAuthorizer`. A sample `SimpleRoleJsonAccessAuthorizer` is included with the same behavior.
 
 ## Run tests
 
@@ -46,3 +49,4 @@ dotnet test
 - v6.0.0: Adds role-based authorization for text reading with pluggable authorizer and tests.
 - v7.0.0: Adds JSON reading (sync/async) with tests.
 - v8.0.0: Adds encrypted JSON reading (sync/async) with pluggable decryptor and tests.
+- v9.0.0: Adds role-based authorization for JSON reading with pluggable authorizer and tests.
