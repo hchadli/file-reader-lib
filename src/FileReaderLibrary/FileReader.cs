@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace FileReaderLibrary
 {
@@ -42,6 +43,36 @@ namespace FileReaderLibrary
 
             using var sr = new StreamReader(path);
             return await sr.ReadToEndAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Reads and parses an XML file into an XDocument.
+        /// </summary>
+        public XDocument ReadXml(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentNullException(nameof(path));
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException("File not found", path);
+
+            using var fs = File.OpenRead(path);
+            return XDocument.Load(fs);
+        }
+
+        /// <summary>
+        /// Asynchronously reads and parses an XML file into an XDocument.
+        /// </summary>
+        public async Task<XDocument> ReadXmlAsync(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentNullException(nameof(path));
+
+            if (!File.Exists(path))
+                throw new FileNotFoundException("File not found", path);
+
+            await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+            return await Task.Run(() => XDocument.Load(fs)).ConfigureAwait(false);
         }
     }
 }
