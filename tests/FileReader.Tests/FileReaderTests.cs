@@ -219,6 +219,89 @@ namespace FileReader.Tests
             await Assert.ThrowsAsync<FileNotFoundException>(async () => await reader.ReadEncryptedTextAsync(missing, decryptor));
         }
 
+        [Fact]
+        public void ReadXmlAuthorized_AllowsAdmin_ForAnyPath()
+        {
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_auth_{Guid.NewGuid()}.xml");
+            var xml = "<root><message>Admin</message></root>";
+            File.WriteAllText(xmlPath, xml);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer();
+
+            var doc = reader.ReadXmlAuthorized(xmlPath, "admin", authorizer);
+
+            Assert.Equal("Admin", doc.Root!.Element("message")!.Value);
+            File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public async Task ReadXmlAuthorizedAsync_AllowsAdmin_ForAnyPath()
+        {
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_auth_{Guid.NewGuid()}.xml");
+            var xml = "<root><message>AdminAsync</message></root>";
+            await File.WriteAllTextAsync(xmlPath, xml);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer();
+
+            var doc = await reader.ReadXmlAuthorizedAsync(xmlPath, "admin", authorizer);
+
+            Assert.Equal("AdminAsync", doc.Root!.Element("message")!.Value);
+            File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public void ReadXmlAuthorized_AllowsUser_ForAllowedPath()
+        {
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_user_{Guid.NewGuid()}.xml");
+            var xml = "<root><message>User</message></root>";
+            File.WriteAllText(xmlPath, xml);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer(new[] { xmlPath });
+
+            var doc = reader.ReadXmlAuthorized(xmlPath, "user", authorizer);
+
+            Assert.Equal("User", doc.Root!.Element("message")!.Value);
+            File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public async Task ReadXmlAuthorizedAsync_DeniesUser_ForNotAllowedPath()
+        {
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_userdeny_{Guid.NewGuid()}.xml");
+            var xml = "<root><message>Deny</message></root>";
+            await File.WriteAllTextAsync(xmlPath, xml);
+
+            var reader = new FileReaderLibrary.FileReader();
+            var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer(new[] { "some-other-path.xml" });
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await reader.ReadXmlAuthorizedAsync(xmlPath, "user", authorizer));
+            File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public void ReadXmlAuthorized_ThrowsArgumentNullException_OnNullAuthorizer()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullauth_{Guid.NewGuid()}.xml");
+            File.WriteAllText(xmlPath, "<root/>");
+            Assert.Throws<ArgumentNullException>(() => reader.ReadXmlAuthorized(xmlPath, "user", null!));
+            File.Delete(xmlPath);
+        }
+
+        [Fact]
+        public void ReadXmlAuthorized_ThrowsArgumentNullException_OnNullRole()
+        {
+            var reader = new FileReaderLibrary.FileReader();
+            var xmlPath = Path.Combine(Path.GetTempPath(), $"filereader_xml_nullrole_{Guid.NewGuid()}.xml");
+            File.WriteAllText(xmlPath, "<root/>");
+            var authorizer = new FileReaderLibrary.SimpleRoleXmlAccessAuthorizer(new[] { xmlPath });
+            Assert.Throws<ArgumentNullException>(() => reader.ReadXmlAuthorized(xmlPath, null!, authorizer));
+            File.Delete(xmlPath);
+        }
+
         public void Dispose()
         {
             try
